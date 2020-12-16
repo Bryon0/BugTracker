@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Text;
 using MySqlConnector;  //NuGet Install-Package MySqlConnector -Version 1.0.1
 using System.Collections.Generic;
 
@@ -52,6 +53,37 @@ namespace BugTracker
             return rowsAffected;
         }
 
+        private int Retreive(string sql, List<MySqlParameter> parameters, ref List<string> list)
+        {
+            int rowsAffected = 0;
+            using (var connection = new MySqlConnection($"Server={_server};User ID={_userid};Password={_password};Database={_database}"))
+            {   
+                connection.Open();                
+                using (var command = new MySqlCommand(sql, connection))
+                {
+                    foreach(MySqlParameter parameter in parameters)
+                    {
+                        command.Parameters.Add(parameter);
+                    }
+
+                    MySqlDataReader mySqlDataReader = command.ExecuteReader();                   
+                    
+                    while(mySqlDataReader.Read())
+                    {
+                        StringBuilder stringBuilder = new StringBuilder();
+                        int fieldCount = mySqlDataReader.FieldCount;
+
+                        for(int i = 0; i < fieldCount; i++)
+                        {
+                            stringBuilder.Append(Convert.ToString(mySqlDataReader[i]));       
+                        }
+                        list.Add(stringBuilder.ToString());
+                        rowsAffected++;
+                    }
+                }
+            }
+            return rowsAffected;
+        }
 
         /// <summary>
         /// 
@@ -81,6 +113,11 @@ namespace BugTracker
             return rowsAffected = Insert(queryStatement, parameters);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="projectName"></param>
+        /// <returns></returns>
         public int CreateNewProject(string projectName)
         {
             int rowsAffected = 0;
@@ -135,6 +172,45 @@ namespace BugTracker
             parameters.Add(mySqlParameter);
 
             return Insert(queryStatement, parameters);  
+        }
+
+        public int AddBugComment(string projectName, string bugComment, string firstName, string lastName)
+        {
+            MySqlParameter mySqlParameter;
+
+            //mysql> INSERT INTO joke(joke_text, joke_date, author_id)
+            //VALUES (‘Humpty Dumpty had a great fall.’, ‘1899–03–13’, (SELECT id FROM author WHERE author_name = ‘Famous Anthony’));
+            string subQueryStatementBugID = $"SELECT BugID FROM bug WHERE ProjectID=(SELECT ProjectID FROM Project WHERE ProjectName = @ProjectName)";
+            string subQueryStatementUserID = "(SELECT UserID FROM user WHERE FirstName = @FirstName AND LastName = @LastName)";
+            string queryStatement = $"INSERT INTO bugresponse (BugID, UserID, Comment, DateAdded) VALUES({subQueryStatementBugID}, {subQueryStatementUserID}, @Comment, @DateAdded)";
+            List<MySqlParameter> parameters = new List<MySqlParameter>();
+
+            mySqlParameter = new MySqlParameter("@ProjectName", System.Data.SqlDbType.VarChar);
+            mySqlParameter.Value = projectName;
+            parameters.Add(mySqlParameter);    
+            
+            mySqlParameter = new MySqlParameter("@FirstName", System.Data.SqlDbType.VarChar);
+            mySqlParameter.Value = firstName;
+            parameters.Add(mySqlParameter); 
+
+            mySqlParameter = new MySqlParameter("@LastName", System.Data.SqlDbType.VarChar);
+            mySqlParameter.Value = lastName;
+            parameters.Add(mySqlParameter); 
+
+            mySqlParameter = new MySqlParameter("@Comment", System.Data.SqlDbType.Text);
+            mySqlParameter.Value = bugComment;
+            parameters.Add(mySqlParameter);
+       
+            mySqlParameter = new MySqlParameter("@DateAdded", System.Data.SqlDbType.DateTime);
+            mySqlParameter.Value = DateTime.Now;
+            parameters.Add(mySqlParameter);
+
+            return Insert(queryStatement, parameters);  
+        }
+
+        public int GetBugComments(string project, ref List<string> ts)
+        {
+
         }
     }
 }

@@ -15,6 +15,17 @@ namespace BugTracker
         public Form1()
         {
             InitializeComponent();
+
+            Database database = new Database("localhost", "bugtracker", "root", "20zosha");
+            try
+            {
+
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
         }
     }
 }

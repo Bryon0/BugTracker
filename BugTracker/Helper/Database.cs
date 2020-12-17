@@ -34,7 +34,7 @@ namespace BugTracker
         /// <param name="sql"></param>
         /// <param name="parameters"></param>
         /// <returns></returns>
-        private int Insert(string sql, List<MySqlParameter> parameters)
+        private int Query(string sql, List<MySqlParameter> parameters)
         {
             int rowsAffected = 0;
             using (var connection = new MySqlConnection($"Server={_server};User ID={_userid};Password={_password};Database={_database}"))
@@ -53,7 +53,7 @@ namespace BugTracker
             return rowsAffected;
         }
 
-        private int Retreive(string sql, List<MySqlParameter> parameters, ref List<string> list)
+        private int Query(string sql, List<MySqlParameter> parameters, ref List<string> list)
         {
             int rowsAffected = 0;
             using (var connection = new MySqlConnection($"Server={_server};User ID={_userid};Password={_password};Database={_database}"))
@@ -110,7 +110,7 @@ namespace BugTracker
             mySqlParameter.Value = DateTime.Now;
             parameters.Add(mySqlParameter);
 
-            return rowsAffected = Insert(queryStatement, parameters);
+            return rowsAffected = Query(queryStatement, parameters);
         }
 
         /// <summary>
@@ -133,18 +133,49 @@ namespace BugTracker
             mySqlParameter.Value = DateTime.Now;
             parameters.Add(mySqlParameter);
 
-            return rowsAffected = Insert(queryStatement, parameters);  
+            return rowsAffected = Query(queryStatement, parameters);  
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="projectName"></param>
+        /// <param name="active"></param>
+        /// <returns></returns>
+        public int SetProjectActiveState(string projectName, Boolean active)
+        {
+            int rowsAffected = 0;
+            MySqlParameter mySqlParameter;
+            string queryStatement = "UPDATE project SET active = @Active WHERE ProjectName = @ProjectName";
+            List<MySqlParameter> parameters = new List<MySqlParameter>();
+
+            mySqlParameter = new MySqlParameter("@ProjectName", System.Data.SqlDbType.VarChar);
+            mySqlParameter.Value = projectName;
+            parameters.Add(mySqlParameter);            
+
+            mySqlParameter = new MySqlParameter("@Active", System.Data.SqlDbType.TinyInt);
+            mySqlParameter.Value = active ? 0 : 1;
+            parameters.Add(mySqlParameter);
+
+            return rowsAffected = Query(queryStatement, parameters); 
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="projectName"></param>
+        /// <param name="bugDescription"></param>
+        /// <param name="firstName"></param>
+        /// <param name="lastName"></param>
+        /// <param name="status"></param>
+        /// <returns></returns>
         public int AddBug(string projectName, string bugDescription, string firstName, string lastName, string status = "Open")
         {
             MySqlParameter mySqlParameter;
 
-            //mysql> INSERT INTO joke(joke_text, joke_date, author_id)
-            //VALUES (‘Humpty Dumpty had a great fall.’, ‘1899–03–13’, (SELECT id FROM author WHERE author_name = ‘Famous Anthony’));
             string subQueryStatementProjectID = "(SELECT ProjectID FROM project WHERE ProjectName = @ProjectName)";
             string subQueryStatementUserID = "(SELECT UserID FROM user WHERE FirstName = @FirstName AND LastName = @LastName)";
-            string queryStatement = $"INSERT INTO bug (ProjectID, UserID, Description, Status, DateAdded) VALUES({subQueryStatementProjectID}, {subQueryStatementUserID}, @Description, @Status, @DateAdded)";
+            string queryStatement = $"INSERT INTO bug (ProjectID, UserID, BugIDAlpha, Description, Progress, DateAdded) VALUES({subQueryStatementProjectID}, {subQueryStatementUserID}, @BugIDAlpha, @Description, @Status, @DateAdded)";
             List<MySqlParameter> parameters = new List<MySqlParameter>();
 
             mySqlParameter = new MySqlParameter("@ProjectName", System.Data.SqlDbType.VarChar);
@@ -159,6 +190,10 @@ namespace BugTracker
             mySqlParameter.Value = lastName;
             parameters.Add(mySqlParameter); 
 
+            mySqlParameter = new MySqlParameter("@BugIDAlpha", System.Data.SqlDbType.Text);
+            mySqlParameter.Value = bugDescription;
+            parameters.Add(mySqlParameter);
+
             mySqlParameter = new MySqlParameter("@Description", System.Data.SqlDbType.Text);
             mySqlParameter.Value = bugDescription;
             parameters.Add(mySqlParameter);
@@ -171,18 +206,16 @@ namespace BugTracker
             mySqlParameter.Value = DateTime.Now;
             parameters.Add(mySqlParameter);
 
-            return Insert(queryStatement, parameters);  
+            return Query(queryStatement, parameters);  
         }
 
         public int AddBugComment(string projectName, string bugComment, string firstName, string lastName)
         {
             MySqlParameter mySqlParameter;
 
-            //mysql> INSERT INTO joke(joke_text, joke_date, author_id)
-            //VALUES (‘Humpty Dumpty had a great fall.’, ‘1899–03–13’, (SELECT id FROM author WHERE author_name = ‘Famous Anthony’));
             string subQueryStatementBugID = $"SELECT BugID FROM bug WHERE ProjectID=(SELECT ProjectID FROM Project WHERE ProjectName = @ProjectName)";
             string subQueryStatementUserID = "(SELECT UserID FROM user WHERE FirstName = @FirstName AND LastName = @LastName)";
-            string queryStatement = $"INSERT INTO bugresponse (BugID, UserID, Comment, DateAdded) VALUES({subQueryStatementBugID}, {subQueryStatementUserID}, @Comment, @DateAdded)";
+            string queryStatement = $"INSERT INTO bugreport (BugID, UserID, Comments, DateAdded) VALUES({subQueryStatementBugID}, {subQueryStatementUserID}, @Comment, @DateAdded)";
             List<MySqlParameter> parameters = new List<MySqlParameter>();
 
             mySqlParameter = new MySqlParameter("@ProjectName", System.Data.SqlDbType.VarChar);
@@ -205,12 +238,35 @@ namespace BugTracker
             mySqlParameter.Value = DateTime.Now;
             parameters.Add(mySqlParameter);
 
-            return Insert(queryStatement, parameters);  
+            return Query(queryStatement, parameters);  
+        }
+
+        public int SetBugActiveState(string projectName, string bugIdAlpha, Boolean active)
+        {
+            int rowsAffected = 0;
+            MySqlParameter mySqlParameter;
+            string queryStatement = "UPDATE bug SET active = @Active WHERE ProjectName = @ProjectName AND BugIDAlpha = @BugIDAlpha;";
+            List<MySqlParameter> parameters = new List<MySqlParameter>();
+
+            mySqlParameter = new MySqlParameter("@ProjectName", System.Data.SqlDbType.VarChar);
+            mySqlParameter.Value = projectName;
+            parameters.Add(mySqlParameter);   
+            
+            mySqlParameter = new MySqlParameter("@BugIDAlpha", System.Data.SqlDbType.VarChar);
+            mySqlParameter.Value = bugIdAlpha;
+            parameters.Add(mySqlParameter);  
+
+            mySqlParameter = new MySqlParameter("@Active", System.Data.SqlDbType.TinyInt);
+            mySqlParameter.Value = active ? 0 : 1;
+            parameters.Add(mySqlParameter);
+
+            return rowsAffected = Query(queryStatement, parameters); 
         }
 
         public int GetBugComments(string project, ref List<string> ts)
         {
-
+            //TODO: Added code to retreive comments on a partiular bug.
+            return 0;
         }
     }
 }

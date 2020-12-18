@@ -16,7 +16,7 @@ namespace BugTracker
         {
             InitializeComponent();
 
-            Database database = new Database("localhost", "bugtracker", "root", "20zosha");
+  
             try
             {
 
@@ -25,6 +25,11 @@ namespace BugTracker
             {
                 MessageBox.Show(ex.Message);
             }
+
+        }
+
+        private void toolStripMenuItem1_Click(Object sender, EventArgs e)
+        {
 
         }
     }

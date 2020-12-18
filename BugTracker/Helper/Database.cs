@@ -53,6 +53,13 @@ namespace BugTracker
             return rowsAffected;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <param name="parameters"></param>
+        /// <param name="list"></param>
+        /// <returns></returns>
         private int Query(string sql, List<MySqlParameter> parameters, ref List<string> list)
         {
             int rowsAffected = 0;
@@ -139,6 +146,19 @@ namespace BugTracker
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="ListProjects"></param>
+        /// <returns></returns>
+        public int GetProjects(ref List<string> ListProjects)
+        {
+            int rowsAffected = 0;
+            string queryStatement = "SELECT ProjectName FROM project WHERE active = 0";  
+            rowsAffected = Query(queryStatement, new List<MySqlParameter>(), ref ListProjects);
+            return ListProjects.Count;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
         /// <param name="projectName"></param>
         /// <param name="active"></param>
         /// <returns></returns>
@@ -191,7 +211,7 @@ namespace BugTracker
             parameters.Add(mySqlParameter); 
 
             mySqlParameter = new MySqlParameter("@BugIDAlpha", System.Data.SqlDbType.Text);
-            mySqlParameter.Value = bugDescription;
+            mySqlParameter.Value = "";
             parameters.Add(mySqlParameter);
 
             mySqlParameter = new MySqlParameter("@Description", System.Data.SqlDbType.Text);
@@ -209,7 +229,16 @@ namespace BugTracker
             return Query(queryStatement, parameters);  
         }
 
-        public int AddBugComment(string projectName, string bugComment, string firstName, string lastName)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="projectName"></param>
+        /// <param name="bugIdAlpha"></param>
+        /// <param name="bugComment"></param>
+        /// <param name="firstName"></param>
+        /// <param name="lastName"></param>
+        /// <returns></returns>
+        public int AddBugComment(string projectName, string bugIdAlpha, string bugComment, string firstName, string lastName)
         {
             MySqlParameter mySqlParameter;
 
@@ -241,6 +270,26 @@ namespace BugTracker
             return Query(queryStatement, parameters);  
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="ListComments"></param>
+        /// <returns></returns>
+        public int GetComments(ref List<string> ListComments)
+        {
+            int rowsAffected = 0;
+            string queryStatement = "SELECT ProjectName  FROM project WHERE active = 0";  
+            rowsAffected = Query(queryStatement, new List<MySqlParameter>(), ref ListComments);
+            return ListComments.Count;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="projectName"></param>
+        /// <param name="bugIdAlpha"></param>
+        /// <param name="active"></param>
+        /// <returns></returns>
         public int SetBugActiveState(string projectName, string bugIdAlpha, Boolean active)
         {
             int rowsAffected = 0;
@@ -263,10 +312,37 @@ namespace BugTracker
             return rowsAffected = Query(queryStatement, parameters); 
         }
 
-        public int GetBugComments(string project, ref List<string> ts)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="project"></param>
+        /// <param name="ts"></param>
+        /// <returns></returns>
+        public int GetBugComments(string projectName, string bugIdAlpha, string fName, string lName, ref List<string> ts)
         {
-            //TODO: Added code to retreive comments on a partiular bug.
-            return 0;
+            int rowsAffected = 0;
+            MySqlParameter mySqlParameter;
+            string queryStatement = "UPDATE bug SET active = @Active WHERE ProjectName = @ProjectName AND BugIDAlpha = @BugIDAlpha;";
+            List<MySqlParameter> parameters = new List<MySqlParameter>();
+
+            mySqlParameter = new MySqlParameter("@ProjectName", System.Data.SqlDbType.VarChar);
+            mySqlParameter.Value = projectName;
+            parameters.Add(mySqlParameter);   
+            
+            mySqlParameter = new MySqlParameter("@BugIDAlpha", System.Data.SqlDbType.VarChar);
+            mySqlParameter.Value = bugIdAlpha;
+            parameters.Add(mySqlParameter);  
+
+            mySqlParameter = new MySqlParameter("@FirstName", System.Data.SqlDbType.VarChar);
+            mySqlParameter.Value = fName;
+            parameters.Add(mySqlParameter);
+
+            mySqlParameter = new MySqlParameter("@LastName", System.Data.SqlDbType.VarChar);
+            mySqlParameter.Value = lName;
+            parameters.Add(mySqlParameter);
+
+            rowsAffected = Query(queryStatement, parameters, ref ts); 
+            return ts.Count;
         }
     }
 }
